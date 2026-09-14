@@ -30,6 +30,10 @@ Get-NetRoute -InterfaceIndex $wired.InterfaceIndex -ErrorAction SilentlyContinue
     $_.DestinationPrefix -eq "0.0.0.0/0"
 } | Remove-NetRoute -Confirm:$false -ErrorAction SilentlyContinue
 
+# Set IP to DHCP
+Write-Host "Setting adapter to DHCP..."
+Set-NetIPInterface -InterfaceIndex $wired.InterfaceIndex -Dhcp Enabled
+
 # Set DNS to DHCP (remove any static DNS servers)
 Write-Host "Setting DNS to DHCP..."
 Set-DnsClientServerAddress -InterfaceIndex $wired.InterfaceIndex -ResetServerAddresses
