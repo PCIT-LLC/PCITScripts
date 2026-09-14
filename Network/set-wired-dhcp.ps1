@@ -1,5 +1,5 @@
 # Network/set-wired-dhcp.ps1
-# Detects the wired (Ethernet) adapter and sets it to DHCP
+# Detects the wired (Ethernet) adapter and sets it to DHCP (IP, gateway, DNS)
 
 Write-Host "Detecting wired network adapter..."
 
@@ -24,23 +24,48 @@ Get-NetIPAddress -InterfaceIndex $wired.InterfaceIndex -ErrorAction SilentlyCont
     $_.AddressFamily -eq "IPv4" -and $_.PrefixOrigin -eq "Manual"
 } | Remove-NetIPAddress -Confirm:$false -ErrorAction SilentlyContinue
 
-# Set to DHCP
+# Remove existing default gateway(s)
+Write-Host "Removing default gateway(s)..."
+Get-NetRoute -InterfaceIndex $wired.InterfaceIndex -ErrorAction SilentlyContinue | Where-Object {
+    $_.DestinationPrefix -eq "0.0.0.0/0"
+} | Remove-NetRoute -Confirm:$false -ErrorAction SilentlyContinue
+
+# Set DNS to DHCP (remove any static DNS servers)
+Write-Host "Setting DNS to DHCP..."
+Set-DnsClientServerAddress -InterfaceIndex $wired.InterfaceIndex -ResetServerAddresses
+
+# Set IP to DHCP
 Write-Host "Setting adapter to DHCP..."
 Set-NetIPInterface -InterfaceIndex $wired.InterfaceIndex -Dhcp Enabled
 
+# Refresh DHCP lease
+Write-Host "Requesting new IP address..."
+Start-Sleep -Seconds 3
+
 # Verify
-Start-Sleep -Seconds 2
 $adapter = Get-NetAdapter -InterfaceIndex $wired.InterfaceIndex
 $ip = Get-NetIPAddress -InterfaceIndex $wired.InterfaceIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue | Select-Object -First 1
+$dns = Get-DnsClientServerAddress -InterfaceIndex $wired.InterfaceIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue
+$gateway = Get-NetRoute -InterfaceIndex $wired.InterfaceIndex -ErrorAction SilentlyContinue | Where-Object { $_.DestinationPrefix -eq "0.0.0.0/0" }
 
 Write-Host ""
 Write-Host "Adapter: $($adapter.Name)"
 Write-Host "Status: $($adapter.Status)"
-Write-Host "DHCP: $($adapter.Dhcp)"
+Write-Host "DHCP Enabled: $($adapter.Dhcp)"
 if ($ip) {
-    Write-Host "IP Address: $($ip.IPAddress)"
+    Write-Host "IP Address: $($ip.IPAddress)/$($ip.PrefixLength)"
 } else {
     Write-Host "IP Address: (none assigned yet)"
 }
+if ($gateway) {
+    Write-Host "Default Gateway: $($gateway.NextHop)"
+} else {
+    Write-Host "Default Gateway: (none)"
+}
+if ($dns) {
+    Write-Host "DNS Servers: $($dns.ServerAddresses -join ', ')"
+} else {
+    Write-Host "DNS Servers: (none)"
+}
 Write-Host ""
-Write-Host "Done. Wired adapter is now set to DHCP."
+Write-Host "Done. Wired adapter is now fully set to DHCP (IP, gateway, DNS)."
