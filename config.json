@@ -12,6 +12,11 @@
           "label": "Reset TCP/IP Stack",
           "script": "Network/reset-tcpip.ps1",
           "elevated": true
+        },
+        {
+          "label": "Set Wired to DHCP",
+          "script": "Network/set-wired-dhcp.ps1",
+          "elevated": true
         }
       ]
     },

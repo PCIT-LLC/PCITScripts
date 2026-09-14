@@ -106,6 +106,14 @@ Create a `Docker/` folder with scripts, then add a new top-level entry to `categ
 - **Throw** for fatal errors — causes a non-zero exit code the launcher logs.
 - **No Read-Host** — scripts run non-interactively. If you need input, pass it as a parameter.
 
+### Network scripts
+
+| Script | Description |
+|---|---|
+| `Network/flush-dns.ps1` | Clears the DNS resolver cache |
+| `Network/reset-tcpip.ps1` | Resets the TCP/IP stack |
+| `Network/set-wired-dhcp.ps1` | Detects the active wired adapter and sets it to DHCP |
+
 ### Example template:
 
 ```powershell
