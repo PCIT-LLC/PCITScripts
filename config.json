@@ -1,0 +1,29 @@
+{
+  "categories": [
+    {
+      "name": "Network",
+      "scripts": [
+        {
+          "label": "Flush DNS",
+          "script": "Network/flush-dns.ps1",
+          "elevated": true
+        },
+        {
+          "label": "Reset TCP/IP Stack",
+          "script": "Network/reset-tcpip.ps1",
+          "elevated": true
+        }
+      ]
+    },
+    {
+      "name": "System",
+      "scripts": [
+        {
+          "label": "Disk Cleanup",
+          "script": "System/disk-cleanup.ps1",
+          "elevated": true
+        }
+      ]
+    }
+  ]
+}
