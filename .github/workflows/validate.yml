@@ -1,0 +1,125 @@
+name: Validate Scripts Repo
+
+on:
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'config.json'
+      - '**.ps1'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate config.json is valid JSON
+        run: |
+          python3 -c "
+          import json, sys
+          try:
+              with open('config.json') as f:
+                  data = json.load(f)
+              print('config.json: valid JSON')
+          except json.JSONDecodeError as e:
+              print(f'config.json: INVALID JSON - {e}')
+              sys.exit(1)
+          "
+
+      - name: Validate config.json schema
+        run: |
+          python3 -c "
+          import json, sys
+          with open('config.json') as f:
+              data = json.load(f)
+
+          errors = []
+
+          if 'categories' not in data:
+              errors.append('Missing top-level \"categories\" key')
+          else:
+              if not isinstance(data['categories'], list):
+                  errors.append('\"categories\" must be a list')
+              else:
+                  for i, cat in enumerate(data['categories']):
+                      if 'name' not in cat:
+                          errors.append(f'Category {i}: missing \"name\"')
+                      if 'scripts' not in cat:
+                          errors.append(f'Category {i} ({cat.get(\"name\", \"?\")}): missing \"scripts\"')
+                      elif not isinstance(cat['scripts'], list):
+                          errors.append(f'Category {i}: \"scripts\" must be a list')
+                      else:
+                          for j, script in enumerate(cat['scripts']):
+                              prefix = f'Category \"{cat.get(\"name\", i)}\", script {j}'
+                              if 'label' not in script:
+                                  errors.append(f'{prefix}: missing \"label\"')
+                              if 'script' not in script:
+                                  errors.append(f'{prefix}: missing \"script\" path')
+                              if 'elevated' not in script:
+                                  errors.append(f'{prefix}: missing \"elevated\" flag')
+                              elif not isinstance(script['elevated'], bool):
+                                  errors.append(f'{prefix}: \"elevated\" must be true/false')
+
+          if errors:
+              print('Schema errors:')
+              for e in errors:
+                  print(f'  - {e}')
+              sys.exit(1)
+          else:
+              print('config.json: schema valid')
+          "
+
+      - name: Verify all referenced script files exist
+        run: |
+          python3 -c "
+          import json, os, sys
+          with open('config.json') as f:
+              data = json.load(f)
+
+          missing = []
+          for cat in data.get('categories', []):
+              for script in cat.get('scripts', []):
+                  path = script.get('script', '')
+                  if not os.path.isfile(path):
+                      missing.append(f'  - {path} (referenced in \"{cat[\"name\"]}\" > \"{script.get(\"label\", \"?\")}\")')
+
+          if missing:
+              print('Missing script files:')
+              for m in missing:
+                  print(m)
+              sys.exit(1)
+          else:
+              total = sum(len(cat.get('scripts', [])) for cat in data.get('categories', []))
+              print(f'All {total} referenced script files exist.')
+          "
+
+      - name: Check for orphaned scripts
+        run: |
+          python3 -c "
+          import json, os, sys
+          with open('config.json') as f:
+              data = json.load(f)
+
+          referenced = set()
+          for cat in data.get('categories', []):
+              for script in cat.get('scripts', []):
+                  referenced.add(os.path.normpath(script.get('script', '')))
+
+          actual = set()
+          for root, dirs, files in os.walk('.'):
+              # Skip .git and other hidden dirs
+              dirs[:] = [d for d in dirs if not d.startswith('.')]
+              for f in files:
+                  if f.endswith('.ps1'):
+                      actual.add(os.path.normpath(os.path.join(root, f)))
+
+          orphans = actual - referenced
+          if orphans:
+              print('Orphaned .ps1 files not referenced in config.json:')
+              for o in sorted(orphans):
+                  print(f'  - {o}')
+              # Warning only — don't fail the build
+              print('\\n(Warning only — build will still pass)')
+          else:
+              print('No orphaned scripts found.')
+          "
