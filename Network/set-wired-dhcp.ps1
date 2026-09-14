@@ -34,13 +34,15 @@ Get-NetRoute -InterfaceIndex $wired.InterfaceIndex -ErrorAction SilentlyContinue
 Write-Host "Setting DNS to DHCP..."
 Set-DnsClientServerAddress -InterfaceIndex $wired.InterfaceIndex -ResetServerAddresses
 
-# Set IP to DHCP
-Write-Host "Setting adapter to DHCP..."
-Set-NetIPInterface -InterfaceIndex $wired.InterfaceIndex -Dhcp Enabled
+# Disable then re-enable the adapter to force a fresh DHCP lease
+Write-Host "Restarting adapter..."
+Disable-NetAdapter -Name $wired.Name -Confirm:$false
+Start-Sleep -Seconds 1
+Enable-NetAdapter -Name $wired.Name -Confirm:$false
 
-# Refresh DHCP lease
-Write-Host "Requesting new IP address..."
-Start-Sleep -Seconds 3
+# Wait for DHCP lease
+Write-Host "Waiting for DHCP..."
+Start-Sleep -Seconds 5
 
 # Verify
 $adapter = Get-NetAdapter -InterfaceIndex $wired.InterfaceIndex
