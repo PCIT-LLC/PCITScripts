@@ -42,6 +42,13 @@ Write-Host "Setting static IP $ip/$prefix..."
 Set-NetIPInterface -InterfaceIndex $wired.InterfaceIndex -Dhcp Disabled
 New-NetIPAddress -InterfaceIndex $wired.InterfaceIndex -IPAddress $ip -PrefixLength $prefix
 
+# Restart adapter to force the static config to stick
+Write-Host "Restarting adapter..."
+Disable-NetAdapter -Name $wired.Name -Confirm:$false
+Start-Sleep -Seconds 1
+Enable-NetAdapter -Name $wired.Name -Confirm:$false
+Start-Sleep -Seconds 3
+
 # Verify
 Start-Sleep -Seconds 2
 $adapter = Get-NetAdapter -InterfaceIndex $wired.InterfaceIndex
