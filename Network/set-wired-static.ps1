@@ -37,17 +37,10 @@ Get-NetRoute -InterfaceIndex $wired.InterfaceIndex -ErrorAction SilentlyContinue
     $_.DestinationPrefix -eq "0.0.0.0/0"
 } | Remove-NetRoute -Confirm:$false -ErrorAction SilentlyContinue
 
-# Disable DHCP and set static IP
-Write-Host "Setting static IP $ip/$prefix..."
-Set-NetIPInterface -InterfaceIndex $wired.InterfaceIndex -Dhcp Disabled
-New-NetIPAddress -InterfaceIndex $wired.InterfaceIndex -IPAddress $ip -PrefixLength $prefix
-
-# Restart adapter to force the static config to stick
-Write-Host "Restarting adapter..."
-Disable-NetAdapter -Name $wired.Name -Confirm:$false
-Start-Sleep -Seconds 1
-Enable-NetAdapter -Name $wired.Name -Confirm:$false
-Start-Sleep -Seconds 3
+# Set static IP using netsh (disables DHCP at the same time)
+Write-Host "Setting static IP $ip via netsh..."
+netsh interface ip set address name="$($wired.Name)" source=static addr=$ip mask=255.255.255.0
+Start-Sleep -Seconds 2
 
 # Verify
 Start-Sleep -Seconds 2
