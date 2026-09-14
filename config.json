@@ -17,6 +17,11 @@
           "label": "Set Wired to DHCP",
           "script": "Network/set-wired-dhcp.ps1",
           "elevated": true
+        },
+        {
+          "label": "Set Wired Static IP",
+          "script": "Network/set-wired-static.ps1",
+          "elevated": true
         }
       ]
     },
