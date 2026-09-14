@@ -40,6 +40,12 @@ Get-NetRoute -InterfaceIndex $wired.InterfaceIndex -ErrorAction SilentlyContinue
 # Set static IP using netsh (disables DHCP at the same time)
 Write-Host "Setting static IP $ip via netsh..."
 netsh interface ip set address name="$($wired.Name)" source=static addr=$ip mask=255.255.255.0
+
+# Set DNS servers
+Write-Host "Setting DNS servers..."
+netsh interface ip set dns name="$($wired.Name)" source=static addr=4.2.2.2
+netsh interface ip add dns name="$($wired.Name)" addr=8.8.8.8 index=2
+
 Start-Sleep -Seconds 2
 
 # Verify
