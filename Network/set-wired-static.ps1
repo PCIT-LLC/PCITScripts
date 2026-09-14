@@ -41,10 +41,6 @@ Get-NetRoute -InterfaceIndex $wired.InterfaceIndex -ErrorAction SilentlyContinue
 Write-Host "Setting static IP $ip via netsh..."
 netsh interface ip set address name="$($wired.Name)" source=static addr=$ip mask=255.255.255.0
 
-# Set DNS servers using PowerShell cmdlet (more reliable than netsh for names with spaces)
-Write-Host "Setting DNS servers..."
-Set-DnsClientServerAddress -InterfaceIndex $wired.InterfaceIndex -ServerAddresses ("4.2.2.2", "8.8.8.8")
-
 Start-Sleep -Seconds 2
 
 # Verify
